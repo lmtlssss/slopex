@@ -90,6 +90,11 @@ jobs:
           fi
 
       - name: Publish To Npm
-        run: npm publish --access public
+        run: |
+          if npm view "slopex@${{ steps.version.outputs.next }}" version >/dev/null 2>&1; then
+            echo "slopex@${{ steps.version.outputs.next }} is already published; skipping npm publish."
+          else
+            npm publish --access public
+          fi
         env:
           NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
