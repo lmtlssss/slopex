@@ -60,6 +60,9 @@ jobs:
       - name: Build Patched Artifact
         run: npm run build-release-artifact
 
+      - name: Smoke Test Packaged Install
+        run: npm run smoke:packaged
+
       - name: Stage Release Asset
         run: |
           mkdir -p dist

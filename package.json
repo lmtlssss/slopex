@@ -15,7 +15,8 @@
   ],
   "scripts": {
     "postinstall": "node bin/slopex.js install --postinstall",
-    "build-release-artifact": "node scripts/build-release-artifact.cjs"
+    "build-release-artifact": "node scripts/build-release-artifact.cjs",
+    "smoke:packaged": "node scripts/smoke-packaged-install.cjs"
   },
   "publishConfig": {
     "access": "public"
