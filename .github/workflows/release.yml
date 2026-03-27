@@ -77,10 +77,7 @@ jobs:
           if ! git diff --cached --quiet; then
             git commit -m "release: v${{ steps.version.outputs.next }} [skip ci]"
           fi
-          if ! git rev-parse -q --verify "refs/tags/v${{ steps.version.outputs.next }}" >/dev/null; then
-            git tag "v${{ steps.version.outputs.next }}"
-          fi
-          git push origin HEAD:main --follow-tags
+          git push origin HEAD:main
 
       - name: Create GitHub Release
         env:
@@ -89,7 +86,7 @@ jobs:
           if gh release view "v${{ steps.version.outputs.next }}" >/dev/null 2>&1; then
             gh release upload "v${{ steps.version.outputs.next }}"               "dist/${{ steps.support.outputs.asset_name }}"               --clobber
           else
-            gh release create "v${{ steps.version.outputs.next }}"               "dist/${{ steps.support.outputs.asset_name }}"               --title "v${{ steps.version.outputs.next }}"               --notes "Automated release for slopex v${{ steps.version.outputs.next }}"
+            gh release create "v${{ steps.version.outputs.next }}"               "dist/${{ steps.support.outputs.asset_name }}"               --target "$(git rev-parse HEAD)"               --title "v${{ steps.version.outputs.next }}"               --notes "Automated release for slopex v${{ steps.version.outputs.next }}"
           fi
 
       - name: Publish To Npm
