@@ -58,7 +58,7 @@ jobs:
         run: npm install -g "@openai/codex@${{ steps.support.outputs.codex_version }}"
 
       - name: Build Patched Artifact
-        run: node bin/slopex.js build-artifact
+        run: npm run build-release-artifact
 
       - name: Stage Release Asset
         run: |

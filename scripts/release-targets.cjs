@@ -1,8 +1,12 @@
 #!/usr/bin/env node
 const fs = require("node:fs");
-const { SUPPORTED_PATCHES, artifactPlatformKey, releaseArtifactName } = require("../lib/patcher");
+const {
+  SUPPORTED_CODEX_VERSIONS,
+  artifactPlatformKey,
+  releaseArtifactName
+} = require("../lib/patcher");
 
-const codexVersion = Object.keys(SUPPORTED_PATCHES)[0];
+const codexVersion = SUPPORTED_CODEX_VERSIONS[0];
 if (!codexVersion) {
   throw new Error("No supported Codex versions are configured.");
 }

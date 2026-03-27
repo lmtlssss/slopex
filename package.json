@@ -1,7 +1,7 @@
 {
   "name": "slopex",
   "version": "0.1.1",
-  "description": "Reset-based continuity patcher for OpenAI Codex that replaces summary compaction with an Obsidian-style graph export.",
+  "description": "Minimal reset-based continuity patcher for OpenAI Codex.",
   "license": "MIT",
   "type": "commonjs",
   "bin": {
@@ -10,12 +10,12 @@
   "files": [
     "bin",
     "lib",
-    "patches",
     "README.md",
     "LICENSE"
   ],
   "scripts": {
-    "postinstall": "node bin/slopex.js install --postinstall"
+    "postinstall": "node bin/slopex.js install --postinstall",
+    "build-release-artifact": "node scripts/build-release-artifact.cjs"
   },
   "publishConfig": {
     "access": "public"
