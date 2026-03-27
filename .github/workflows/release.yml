@@ -1,0 +1,95 @@
+name: release
+
+on:
+  push:
+    branches:
+      - main
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: release-main
+  cancel-in-progress: false
+
+jobs:
+  publish:
+    if: >-
+      ${{ github.event_name != 'push' || (github.actor != 'github-actions[bot]' && !contains(github.event.head_commit.message, '[skip ci]')) }}
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Check Out Repo
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Set Up Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          registry-url: https://registry.npmjs.org
+
+      - name: Set Up Rust
+        uses: dtolnay/rust-toolchain@stable
+
+      - name: Install Linux Build Deps
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y pkg-config libcap-dev
+
+      - name: Resolve Release Targets
+        id: support
+        run: node scripts/release-targets.cjs --github-output
+
+      - name: Read Npm Version
+        id: npm_version
+        run: |
+          echo "version=$(npm view slopex version 2>/dev/null || true)" >> "$GITHUB_OUTPUT"
+
+      - name: Choose Package Version
+        id: version
+        env:
+          PUBLISHED_VERSION: ${{ steps.npm_version.outputs.version }}
+        run: node scripts/bump-release-version.cjs --github-output
+
+      - name: Install Matching Codex
+        run: npm install -g "@openai/codex@${{ steps.support.outputs.codex_version }}"
+
+      - name: Build Patched Artifact
+        run: node bin/slopex.js build-artifact
+
+      - name: Stage Release Asset
+        run: |
+          mkdir -p dist
+          cp "$HOME/.slopex/artifacts/${{ steps.support.outputs.codex_version }}/${{ steps.support.outputs.platform_key }}/codex" "dist/${{ steps.support.outputs.asset_name }}"
+          chmod +x "dist/${{ steps.support.outputs.asset_name }}"
+
+      - name: Commit Release Version
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add package.json
+          if ! git diff --cached --quiet; then
+            git commit -m "release: v${{ steps.version.outputs.next }} [skip ci]"
+          fi
+          if ! git rev-parse -q --verify "refs/tags/v${{ steps.version.outputs.next }}" >/dev/null; then
+            git tag "v${{ steps.version.outputs.next }}"
+          fi
+          git push origin HEAD:main --follow-tags
+
+      - name: Create GitHub Release
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          if gh release view "v${{ steps.version.outputs.next }}" >/dev/null 2>&1; then
+            gh release upload "v${{ steps.version.outputs.next }}"               "dist/${{ steps.support.outputs.asset_name }}"               --clobber
+          else
+            gh release create "v${{ steps.version.outputs.next }}"               "dist/${{ steps.support.outputs.asset_name }}"               --title "v${{ steps.version.outputs.next }}"               --notes "Automated release for slopex v${{ steps.version.outputs.next }}"
+          fi
+
+      - name: Publish To Npm
+        run: npm publish --access public
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
