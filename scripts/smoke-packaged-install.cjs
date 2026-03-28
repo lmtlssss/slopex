@@ -125,8 +125,8 @@ try {
   const codexEntry = resolveCodexEntry(fakeCodexDir);
   runChecked("node", [codexEntry, "--help"], { cwd: repoRoot, env });
 
-  const slopexBin = path.join(prefixDir, "bin", executableName("slopex"));
-  runChecked(slopexBin, ["uninstall"], { cwd: repoRoot, env });
+  const toolBin = path.join(prefixDir, "bin", executableName("slopmodcodex"));
+  runChecked(toolBin, ["stock"], { cwd: repoRoot, env });
 
   const uninstalledConfig = fs.readFileSync(configPath, "utf8");
   assert(!uninstalledConfig.includes("# BEGIN slopex"), "slopex config block still present after uninstall");
@@ -138,7 +138,7 @@ try {
   );
   runChecked("node", [codexEntry, "--help"], { cwd: repoRoot, env });
 
-  runChecked("npm", ["install", "-g", tarballPath], { cwd: repoRoot, env });
+  runChecked(toolBin, ["patch"], { cwd: repoRoot, env });
 
   const reinstallConfig = fs.readFileSync(configPath, "utf8");
   assert(reinstallConfig.includes("# BEGIN slopex"), "slopex config block missing after reinstall");
@@ -148,7 +148,7 @@ try {
   );
 
   fs.rmSync(backupPath, { force: true });
-  runChecked(slopexBin, ["uninstall"], { cwd: repoRoot, env });
+  runChecked(toolBin, ["stock"], { cwd: repoRoot, env });
 
   const fallbackConfig = fs.readFileSync(configPath, "utf8");
   assert(!fallbackConfig.includes("# BEGIN slopex"), "slopex config block still present after fallback uninstall");

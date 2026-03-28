@@ -1,11 +1,11 @@
 {
-  "name": "slopex-cli",
-  "version": "0.1.1",
+  "name": "slopmodcodex",
+  "version": "0.1.2",
   "description": "Minimal reset-based continuity patcher for OpenAI Codex.",
   "license": "MIT",
   "type": "commonjs",
   "bin": {
-    "slopex": "bin/slopex.js"
+    "slopmodcodex": "bin/slopmodcodex.js"
   },
   "files": [
     "bin",
@@ -14,7 +14,7 @@
     "LICENSE"
   ],
   "scripts": {
-    "postinstall": "node bin/slopex.js install --postinstall",
+    "postinstall": "node bin/slopmodcodex.js patch --postinstall",
     "build-release-artifact": "node scripts/build-release-artifact.cjs",
     "smoke:packaged": "node scripts/smoke-packaged-install.cjs"
   },
