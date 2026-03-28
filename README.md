@@ -1,6 +1,6 @@
-# slopmodcodex
+# sloppydisk
 
-`slopmodcodex` is a small reset-based continuity patcher for `@openai/codex`.
+`sloppydisk` is a small reset-based continuity patcher for `@openai/codex`.
 
 It replaces summary-style compaction with reset-style continuity so long chats can clear live context and recover continuity from an Obsidian-style graph instead of stuffing an ever-growing summary capsule back into the model.
 
@@ -17,15 +17,15 @@ Codex must already be installed:
 
 ```bash
 npm install -g @openai/codex
-npm install -g slopmodcodex
+npm install -g sloppydisk
 ```
 
 Package install patches Codex automatically. The explicit helper commands are only for repatching, restoring stock behavior, and inspection:
 
 ```bash
-slopmodcodex patch
-slopmodcodex stock
-slopmodcodex status
+sloppydisk patch
+sloppydisk stock
+sloppydisk status
 ```
 
 The installed package does not build Codex from source. It only does this:

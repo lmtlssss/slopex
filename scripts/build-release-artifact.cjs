@@ -31,8 +31,7 @@ if (!support) {
 ensureBuildPrerequisites();
 ensurePatchFileExists(support.patchFile);
 
-const repoDir = ensureSourceCheckout(support.tag);
-applyPatchIfNeeded(repoDir, support.patchFile);
+const repoDir = ensurePatchedSourceCheckout(support.tag, support.patchFile);
 buildPatchedCodex(repoDir);
 
 const builtBinary = path.join(repoDir, "codex-rs", "target", BUILD_PROFILE, "codex");
@@ -112,13 +111,27 @@ function ensureSourceCheckout(tag) {
   return repoDir;
 }
 
-function applyPatchIfNeeded(repoDir, patchFile) {
+function ensurePatchedSourceCheckout(tag, patchFile) {
+  let repoDir = ensureSourceCheckout(tag);
+  if (applyPatchIfNeeded(repoDir, patchFile, { allowReclone: true, tag })) {
+    return repoDir;
+  }
+
+  repoDir = ensureSourceCheckout(tag);
+  if (applyPatchIfNeeded(repoDir, patchFile, { allowReclone: false, tag })) {
+    return repoDir;
+  }
+
+  throw new Error(`Unable to apply slopex patch cleanly in ${repoDir}. Delete ${repoDir} and try again.`);
+}
+
+function applyPatchIfNeeded(repoDir, patchFile, { allowReclone, tag }) {
   const applyCheck = runChecked("git", ["-C", repoDir, "apply", "--check", patchFile], {
     allowFailure: true
   });
   if (applyCheck.status === 0) {
     runInherited("git", ["-C", repoDir, "apply", patchFile]);
-    return;
+    return true;
   }
 
   const reverseCheck = runChecked(
@@ -128,10 +141,16 @@ function applyPatchIfNeeded(repoDir, patchFile) {
   );
   if (reverseCheck.status === 0) {
     console.log("slopex patch already applied in cached source checkout");
-    return;
+    return true;
   }
 
-  throw new Error(`Unable to apply slopex patch cleanly in ${repoDir}. Delete ${repoDir} and try again.`);
+  if (allowReclone) {
+    console.warn(`cached checkout at ${repoDir} drifted; recloning ${tag} before retrying`);
+    fs.rmSync(repoDir, { recursive: true, force: true });
+    return false;
+  }
+
+  return false;
 }
 
 function buildPatchedCodex(repoDir) {

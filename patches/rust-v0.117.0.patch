@@ -1,100 +1,803 @@
-diff --git a/codex-rs/core/config.schema.json b/codex-rs/core/config.schema.json
-index 3d09100..7b670ba 100644
---- a/codex-rs/core/config.schema.json
-+++ b/codex-rs/core/config.schema.json
-@@ -292,6 +292,13 @@
-         }
-       ]
-     },
-+    "AutoCompactMode": {
-+      "enum": [
-+        "summarize",
-+        "reset"
-+      ],
-+      "type": "string"
-+    },
-     "BundledSkillsConfig": {
-       "additionalProperties": false,
-       "properties": {
-@@ -1935,9 +1942,29 @@
-       "description": "When true, disables burst-paste detection for typed input entirely. All characters are inserted as they are received, and no buffering or placeholder replacement will occur for fast keypress bursts.",
-       "type": "boolean"
-     },
-+    "experimental_auto_compact_mode": {
-+      "allOf": [
-+        {
-+          "$ref": "#/definitions/AutoCompactMode"
-+        }
-+      ],
-+      "description": "Strategy to use when the automatic compaction threshold is hit."
-+    },
-     "experimental_compact_prompt_file": {
-       "$ref": "#/definitions/AbsolutePathBuf"
-     },
-+    "experimental_obsidian_graph_background_agent": {
-+      "description": "Whether reset-style auto-compaction should spawn a background graph organizer agent after exporting a segment.",
-+      "type": "boolean"
-+    },
-+    "experimental_obsidian_graph_root": {
-+      "allOf": [
-+        {
-+          "$ref": "#/definitions/AbsolutePathBuf"
-+        }
-+      ],
-+      "description": "Root folder for exported thread continuity graphs."
-+    },
-     "experimental_realtime_start_instructions": {
-       "description": "Experimental / do not use. Replaces the built-in realtime start instructions inserted into developer messages when realtime becomes active.",
-       "type": "string"
+diff --git a/codex-rs/Cargo.lock b/codex-rs/Cargo.lock
+index 9ae4e7c..69e9d18 100644
+--- a/codex-rs/Cargo.lock
++++ b/codex-rs/Cargo.lock
+@@ -402,7 +402,7 @@ checksum = "5f0e0fee31ef5ed1ba1316088939cea399010ed7731dba877ed44aeb407a75ea"
+ 
+ [[package]]
+ name = "app_test_support"
+-version = "0.0.0"
++version = "0.117.0"
+ dependencies = [
+  "anyhow",
+  "base64 0.22.1",
+@@ -1334,7 +1334,7 @@ checksum = "e9b18233253483ce2f65329a24072ec414db782531bdbb7d0bbc4bd2ce6b7e21"
+ 
+ [[package]]
+ name = "codex-analytics"
+-version = "0.0.0"
++version = "0.117.0"
+ dependencies = [
+  "codex-git-utils",
+  "codex-login",
+@@ -1350,7 +1350,7 @@ dependencies = [
+ 
+ [[package]]
+ name = "codex-ansi-escape"
+-version = "0.0.0"
++version = "0.117.0"
+ dependencies = [
+  "ansi-to-tui",
+  "ratatui",
+@@ -1359,7 +1359,7 @@ dependencies = [
+ 
+ [[package]]
+ name = "codex-api"
+-version = "0.0.0"
++version = "0.117.0"
+ dependencies = [
+  "anyhow",
+  "assert_matches",
+@@ -1389,7 +1389,7 @@ dependencies = [
+ 
+ [[package]]
+ name = "codex-app-server"
+-version = "0.0.0"
++version = "0.117.0"
+ dependencies = [
+  "anyhow",
+  "app_test_support",
+@@ -1452,7 +1452,7 @@ dependencies = [
+ 
+ [[package]]
+ name = "codex-app-server-client"
+-version = "0.0.0"
++version = "0.117.0"
+ dependencies = [
+  "codex-app-server",
+  "codex-app-server-protocol",
+@@ -1473,7 +1473,7 @@ dependencies = [
+ 
+ [[package]]
+ name = "codex-app-server-protocol"
+-version = "0.0.0"
++version = "0.117.0"
+ dependencies = [
+  "anyhow",
+  "clap",
+@@ -1501,7 +1501,7 @@ dependencies = [
+ 
+ [[package]]
+ name = "codex-app-server-test-client"
+-version = "0.0.0"
++version = "0.117.0"
+ dependencies = [
+  "anyhow",
+  "clap",
+@@ -1522,7 +1522,7 @@ dependencies = [
+ 
+ [[package]]
+ name = "codex-apply-patch"
+-version = "0.0.0"
++version = "0.117.0"
+ dependencies = [
+  "anyhow",
+  "assert_cmd",
+@@ -1538,7 +1538,7 @@ dependencies = [
+ 
+ [[package]]
+ name = "codex-arg0"
+-version = "0.0.0"
++version = "0.117.0"
+ dependencies = [
+  "anyhow",
+  "codex-apply-patch",
+@@ -1553,7 +1553,7 @@ dependencies = [
+ 
+ [[package]]
+ name = "codex-async-utils"
+-version = "0.0.0"
++version = "0.117.0"
+ dependencies = [
+  "async-trait",
+  "pretty_assertions",
+@@ -1563,7 +1563,7 @@ dependencies = [
+ 
+ [[package]]
+ name = "codex-backend-client"
+-version = "0.0.0"
++version = "0.117.0"
+ dependencies = [
+  "anyhow",
+  "codex-backend-openapi-models",
+@@ -1578,7 +1578,7 @@ dependencies = [
+ 
+ [[package]]
+ name = "codex-backend-openapi-models"
+-version = "0.0.0"
++version = "0.117.0"
+ dependencies = [
+  "serde",
+  "serde_json",
+@@ -1587,7 +1587,7 @@ dependencies = [
+ 
+ [[package]]
+ name = "codex-chatgpt"
+-version = "0.0.0"
++version = "0.117.0"
+ dependencies = [
+  "anyhow",
+  "clap",
+@@ -1605,7 +1605,7 @@ dependencies = [
+ 
+ [[package]]
+ name = "codex-cli"
+-version = "0.0.0"
++version = "0.117.0"
+ dependencies = [
+  "anyhow",
+  "assert_cmd",
+@@ -1655,7 +1655,7 @@ dependencies = [
+ 
+ [[package]]
+ name = "codex-client"
+-version = "0.0.0"
++version = "0.117.0"
+ dependencies = [
+  "async-trait",
+  "bytes",
+@@ -1685,7 +1685,7 @@ dependencies = [
+ 
+ [[package]]
+ name = "codex-cloud-requirements"
+-version = "0.0.0"
++version = "0.117.0"
+ dependencies = [
+  "async-trait",
+  "base64 0.22.1",
+@@ -1708,7 +1708,7 @@ dependencies = [
+ 
+ [[package]]
+ name = "codex-cloud-tasks"
+-version = "0.0.0"
++version = "0.117.0"
+ dependencies = [
+  "anyhow",
+  "async-trait",
+@@ -1739,7 +1739,7 @@ dependencies = [
+ 
+ [[package]]
+ name = "codex-cloud-tasks-client"
+-version = "0.0.0"
++version = "0.117.0"
+ dependencies = [
+  "anyhow",
+  "async-trait",
+@@ -1754,7 +1754,7 @@ dependencies = [
+ 
+ [[package]]
+ name = "codex-code-mode"
+-version = "0.0.0"
++version = "0.117.0"
+ dependencies = [
+  "async-trait",
+  "pretty_assertions",
+@@ -1768,7 +1768,7 @@ dependencies = [
+ 
+ [[package]]
+ name = "codex-config"
+-version = "0.0.0"
++version = "0.117.0"
+ dependencies = [
+  "anyhow",
+  "codex-app-server-protocol",
+@@ -1792,7 +1792,7 @@ dependencies = [
+ 
+ [[package]]
+ name = "codex-connectors"
+-version = "0.0.0"
++version = "0.117.0"
+ dependencies = [
+  "anyhow",
+  "codex-app-server-protocol",
+@@ -1804,7 +1804,7 @@ dependencies = [
+ 
+ [[package]]
+ name = "codex-core"
+-version = "0.0.0"
++version = "0.117.0"
+ dependencies = [
+  "anyhow",
+  "arc-swap",
+@@ -1923,7 +1923,7 @@ dependencies = [
+ 
+ [[package]]
+ name = "codex-core-skills"
+-version = "0.0.0"
++version = "0.117.0"
+ dependencies = [
+  "anyhow",
+  "codex-analytics",
+@@ -1952,7 +1952,7 @@ dependencies = [
+ 
+ [[package]]
+ name = "codex-debug-client"
+-version = "0.0.0"
++version = "0.117.0"
+ dependencies = [
+  "anyhow",
+  "clap",
+@@ -1964,7 +1964,7 @@ dependencies = [
+ 
+ [[package]]
+ name = "codex-exec"
+-version = "0.0.0"
++version = "0.117.0"
+ dependencies = [
+  "anyhow",
+  "assert_cmd",
+@@ -2006,7 +2006,7 @@ dependencies = [
+ 
+ [[package]]
+ name = "codex-exec-server"
+-version = "0.0.0"
++version = "0.117.0"
+ dependencies = [
+  "anyhow",
+  "arc-swap",
+@@ -2031,7 +2031,7 @@ dependencies = [
+ 
+ [[package]]
+ name = "codex-execpolicy"
+-version = "0.0.0"
++version = "0.117.0"
+ dependencies = [
+  "anyhow",
+  "clap",
+@@ -2048,7 +2048,7 @@ dependencies = [
+ 
+ [[package]]
+ name = "codex-execpolicy-legacy"
+-version = "0.0.0"
++version = "0.117.0"
+ dependencies = [
+  "allocative",
+  "anyhow",
+@@ -2068,7 +2068,7 @@ dependencies = [
+ 
+ [[package]]
+ name = "codex-experimental-api-macros"
+-version = "0.0.0"
++version = "0.117.0"
+ dependencies = [
+  "proc-macro2",
+  "quote",
+@@ -2077,7 +2077,7 @@ dependencies = [
+ 
+ [[package]]
+ name = "codex-features"
+-version = "0.0.0"
++version = "0.117.0"
+ dependencies = [
+  "codex-login",
+  "codex-otel",
+@@ -2091,7 +2091,7 @@ dependencies = [
+ 
+ [[package]]
+ name = "codex-feedback"
+-version = "0.0.0"
++version = "0.117.0"
+ dependencies = [
+  "anyhow",
+  "codex-protocol",
+@@ -2103,7 +2103,7 @@ dependencies = [
+ 
+ [[package]]
+ name = "codex-file-search"
+-version = "0.0.0"
++version = "0.117.0"
+ dependencies = [
+  "anyhow",
+  "clap",
+@@ -2119,7 +2119,7 @@ dependencies = [
+ 
+ [[package]]
+ name = "codex-git-utils"
+-version = "0.0.0"
++version = "0.117.0"
+ dependencies = [
+  "assert_matches",
+  "codex-utils-absolute-path",
+@@ -2138,7 +2138,7 @@ dependencies = [
+ 
+ [[package]]
+ name = "codex-hooks"
+-version = "0.0.0"
++version = "0.117.0"
+ dependencies = [
+  "anyhow",
+  "chrono",
+@@ -2156,7 +2156,7 @@ dependencies = [
+ 
+ [[package]]
+ name = "codex-instructions"
+-version = "0.0.0"
++version = "0.117.0"
+ dependencies = [
+  "codex-protocol",
+  "pretty_assertions",
+@@ -2165,7 +2165,7 @@ dependencies = [
+ 
+ [[package]]
+ name = "codex-keyring-store"
+-version = "0.0.0"
++version = "0.117.0"
+ dependencies = [
+  "keyring",
+  "tracing",
+@@ -2173,7 +2173,7 @@ dependencies = [
+ 
+ [[package]]
+ name = "codex-linux-sandbox"
+-version = "0.0.0"
++version = "0.117.0"
+ dependencies = [
+  "cc",
+  "clap",
+@@ -2195,7 +2195,7 @@ dependencies = [
+ 
+ [[package]]
+ name = "codex-lmstudio"
+-version = "0.0.0"
++version = "0.117.0"
+ dependencies = [
+  "codex-core",
+  "reqwest",
+@@ -2208,7 +2208,7 @@ dependencies = [
+ 
+ [[package]]
+ name = "codex-login"
+-version = "0.0.0"
++version = "0.117.0"
+ dependencies = [
+  "anyhow",
+  "async-trait",
+@@ -2246,7 +2246,7 @@ dependencies = [
+ 
+ [[package]]
+ name = "codex-mcp-server"
+-version = "0.0.0"
++version = "0.117.0"
+ dependencies = [
+  "anyhow",
+  "codex-arg0",
+@@ -2275,7 +2275,7 @@ dependencies = [
+ 
+ [[package]]
+ name = "codex-network-proxy"
+-version = "0.0.0"
++version = "0.117.0"
+ dependencies = [
+  "anyhow",
+  "async-trait",
+@@ -2306,7 +2306,7 @@ dependencies = [
+ 
+ [[package]]
+ name = "codex-ollama"
+-version = "0.0.0"
++version = "0.117.0"
+ dependencies = [
+  "assert_matches",
+  "async-stream",
+@@ -2324,7 +2324,7 @@ dependencies = [
+ 
+ [[package]]
+ name = "codex-otel"
+-version = "0.0.0"
++version = "0.117.0"
+ dependencies = [
+  "chrono",
+  "codex-api",
+@@ -2356,7 +2356,7 @@ dependencies = [
+ 
+ [[package]]
+ name = "codex-package-manager"
+-version = "0.0.0"
++version = "0.117.0"
+ dependencies = [
+  "fd-lock",
+  "flate2",
+@@ -2376,7 +2376,7 @@ dependencies = [
+ 
+ [[package]]
+ name = "codex-plugin"
+-version = "0.0.0"
++version = "0.117.0"
+ dependencies = [
+  "codex-utils-absolute-path",
+  "codex-utils-plugins",
+@@ -2385,7 +2385,7 @@ dependencies = [
+ 
+ [[package]]
+ name = "codex-process-hardening"
+-version = "0.0.0"
++version = "0.117.0"
+ dependencies = [
+  "libc",
+  "pretty_assertions",
+@@ -2393,7 +2393,7 @@ dependencies = [
+ 
+ [[package]]
+ name = "codex-protocol"
+-version = "0.0.0"
++version = "0.117.0"
+ dependencies = [
+  "anyhow",
+  "codex-execpolicy",
+@@ -2421,7 +2421,7 @@ dependencies = [
+ 
+ [[package]]
+ name = "codex-responses-api-proxy"
+-version = "0.0.0"
++version = "0.117.0"
+ dependencies = [
+  "anyhow",
+  "clap",
+@@ -2437,7 +2437,7 @@ dependencies = [
+ 
+ [[package]]
+ name = "codex-rmcp-client"
+-version = "0.0.0"
++version = "0.117.0"
+ dependencies = [
+  "anyhow",
+  "axum",
+@@ -2471,7 +2471,7 @@ dependencies = [
+ 
+ [[package]]
+ name = "codex-rollout"
+-version = "0.0.0"
++version = "0.117.0"
+ dependencies = [
+  "anyhow",
+  "async-trait",
+@@ -2496,7 +2496,7 @@ dependencies = [
+ 
+ [[package]]
+ name = "codex-sandboxing"
+-version = "0.0.0"
++version = "0.117.0"
+ dependencies = [
+  "codex-network-proxy",
+  "codex-protocol",
+@@ -2513,7 +2513,7 @@ dependencies = [
+ 
+ [[package]]
+ name = "codex-secrets"
+-version = "0.0.0"
++version = "0.117.0"
+ dependencies = [
+  "age",
+  "anyhow",
+@@ -2534,7 +2534,7 @@ dependencies = [
+ 
+ [[package]]
+ name = "codex-shell-command"
+-version = "0.0.0"
++version = "0.117.0"
+ dependencies = [
+  "anyhow",
+  "base64 0.22.1",
+@@ -2554,7 +2554,7 @@ dependencies = [
+ 
+ [[package]]
+ name = "codex-shell-escalation"
+-version = "0.0.0"
++version = "0.117.0"
+ dependencies = [
+  "anyhow",
+  "async-trait",
+@@ -2575,7 +2575,7 @@ dependencies = [
+ 
+ [[package]]
+ name = "codex-skills"
+-version = "0.0.0"
++version = "0.117.0"
+ dependencies = [
+  "codex-utils-absolute-path",
+  "include_dir",
+@@ -2584,7 +2584,7 @@ dependencies = [
+ 
+ [[package]]
+ name = "codex-state"
+-version = "0.0.0"
++version = "0.117.0"
+ dependencies = [
+  "anyhow",
+  "chrono",
+@@ -2607,7 +2607,7 @@ dependencies = [
+ 
+ [[package]]
+ name = "codex-stdio-to-uds"
+-version = "0.0.0"
++version = "0.117.0"
+ dependencies = [
+  "anyhow",
+  "codex-utils-cargo-bin",
+@@ -2618,7 +2618,7 @@ dependencies = [
+ 
+ [[package]]
+ name = "codex-terminal-detection"
+-version = "0.0.0"
++version = "0.117.0"
+ dependencies = [
+  "pretty_assertions",
+  "tracing",
+@@ -2626,7 +2626,7 @@ dependencies = [
+ 
+ [[package]]
+ name = "codex-tui"
+-version = "0.0.0"
++version = "0.117.0"
+ dependencies = [
+  "anyhow",
+  "arboard",
+@@ -2722,7 +2722,7 @@ dependencies = [
+ 
+ [[package]]
+ name = "codex-tui-app-server"
+-version = "0.0.0"
++version = "0.117.0"
+ dependencies = [
+  "anyhow",
+  "arboard",
+@@ -2815,7 +2815,7 @@ dependencies = [
+ 
+ [[package]]
+ name = "codex-utils-absolute-path"
+-version = "0.0.0"
++version = "0.117.0"
+ dependencies = [
+  "dirs",
+  "path-absolutize",
+@@ -2829,14 +2829,14 @@ dependencies = [
+ 
+ [[package]]
+ name = "codex-utils-approval-presets"
+-version = "0.0.0"
++version = "0.117.0"
+ dependencies = [
+  "codex-protocol",
+ ]
+ 
+ [[package]]
+ name = "codex-utils-cache"
+-version = "0.0.0"
++version = "0.117.0"
+ dependencies = [
+  "lru 0.16.3",
+  "sha1",
+@@ -2845,7 +2845,7 @@ dependencies = [
+ 
+ [[package]]
+ name = "codex-utils-cargo-bin"
+-version = "0.0.0"
++version = "0.117.0"
+ dependencies = [
+  "assert_cmd",
+  "runfiles",
+@@ -2854,7 +2854,7 @@ dependencies = [
+ 
+ [[package]]
+ name = "codex-utils-cli"
+-version = "0.0.0"
++version = "0.117.0"
+ dependencies = [
+  "clap",
+  "codex-protocol",
+@@ -2865,15 +2865,15 @@ dependencies = [
+ 
+ [[package]]
+ name = "codex-utils-elapsed"
+-version = "0.0.0"
++version = "0.117.0"
+ 
+ [[package]]
+ name = "codex-utils-fuzzy-match"
+-version = "0.0.0"
++version = "0.117.0"
+ 
+ [[package]]
+ name = "codex-utils-home-dir"
+-version = "0.0.0"
++version = "0.117.0"
+ dependencies = [
+  "dirs",
+  "pretty_assertions",
+@@ -2882,7 +2882,7 @@ dependencies = [
+ 
+ [[package]]
+ name = "codex-utils-image"
+-version = "0.0.0"
++version = "0.117.0"
+ dependencies = [
+  "base64 0.22.1",
+  "codex-utils-cache",
+@@ -2894,7 +2894,7 @@ dependencies = [
+ 
+ [[package]]
+ name = "codex-utils-json-to-toml"
+-version = "0.0.0"
++version = "0.117.0"
+ dependencies = [
+  "pretty_assertions",
+  "serde_json",
+@@ -2903,7 +2903,7 @@ dependencies = [
+ 
+ [[package]]
+ name = "codex-utils-oss"
+-version = "0.0.0"
++version = "0.117.0"
+ dependencies = [
+  "codex-core",
+  "codex-lmstudio",
+@@ -2912,7 +2912,7 @@ dependencies = [
+ 
+ [[package]]
+ name = "codex-utils-output-truncation"
+-version = "0.0.0"
++version = "0.117.0"
+ dependencies = [
+  "codex-protocol",
+  "codex-utils-string",
+@@ -2921,7 +2921,7 @@ dependencies = [
+ 
+ [[package]]
+ name = "codex-utils-path"
+-version = "0.0.0"
++version = "0.117.0"
+ dependencies = [
+  "codex-utils-absolute-path",
+  "dunce",
+@@ -2931,7 +2931,7 @@ dependencies = [
+ 
+ [[package]]
+ name = "codex-utils-plugins"
+-version = "0.0.0"
++version = "0.117.0"
+ dependencies = [
+  "serde",
+  "serde_json",
+@@ -2940,7 +2940,7 @@ dependencies = [
+ 
+ [[package]]
+ name = "codex-utils-pty"
+-version = "0.0.0"
++version = "0.117.0"
+ dependencies = [
+  "anyhow",
+  "filedescriptor",
+@@ -2956,7 +2956,7 @@ dependencies = [
+ 
+ [[package]]
+ name = "codex-utils-readiness"
+-version = "0.0.0"
++version = "0.117.0"
+ dependencies = [
+  "assert_matches",
+  "async-trait",
+@@ -2967,14 +2967,14 @@ dependencies = [
+ 
+ [[package]]
+ name = "codex-utils-rustls-provider"
+-version = "0.0.0"
++version = "0.117.0"
+ dependencies = [
+  "rustls",
+ ]
+ 
+ [[package]]
+ name = "codex-utils-sandbox-summary"
+-version = "0.0.0"
++version = "0.117.0"
+ dependencies = [
+  "codex-core",
+  "codex-protocol",
+@@ -2984,7 +2984,7 @@ dependencies = [
+ 
+ [[package]]
+ name = "codex-utils-sleep-inhibitor"
+-version = "0.0.0"
++version = "0.117.0"
+ dependencies = [
+  "core-foundation 0.9.4",
+  "libc",
+@@ -2994,14 +2994,14 @@ dependencies = [
+ 
+ [[package]]
+ name = "codex-utils-stream-parser"
+-version = "0.0.0"
++version = "0.117.0"
+ dependencies = [
+  "pretty_assertions",
+ ]
+ 
+ [[package]]
+ name = "codex-utils-string"
+-version = "0.0.0"
++version = "0.117.0"
+ dependencies = [
+  "pretty_assertions",
+  "regex-lite",
+@@ -3009,14 +3009,14 @@ dependencies = [
+ 
+ [[package]]
+ name = "codex-utils-template"
+-version = "0.0.0"
++version = "0.117.0"
+ dependencies = [
+  "pretty_assertions",
+ ]
+ 
+ [[package]]
+ name = "codex-v8-poc"
+-version = "0.0.0"
++version = "0.117.0"
+ dependencies = [
+  "pretty_assertions",
+  "v8",
+@@ -3024,7 +3024,7 @@ dependencies = [
+ 
+ [[package]]
+ name = "codex-windows-sandbox"
+-version = "0.0.0"
++version = "0.117.0"
+ dependencies = [
+  "anyhow",
+  "base64 0.22.1",
+@@ -3238,7 +3238,7 @@ dependencies = [
+ 
+ [[package]]
+ name = "core_test_support"
+-version = "0.0.0"
++version = "0.117.0"
+ dependencies = [
+  "anyhow",
+  "assert_cmd",
+@@ -6075,7 +6075,7 @@ checksum = "b3eede3bdf92f3b4f9dc04072a9ce5ab557d5ec9038773bf9ffcd5588b3cc05b"
+ 
+ [[package]]
+ name = "mcp_test_support"
+-version = "0.0.0"
++version = "0.117.0"
+ dependencies = [
+  "anyhow",
+  "codex-core",
 diff --git a/codex-rs/core/src/auto_compact_reset.rs b/codex-rs/core/src/auto_compact_reset.rs
 new file mode 100644
-index 0000000..a17e063
+index 0000000..d282046
 --- /dev/null
 +++ b/codex-rs/core/src/auto_compact_reset.rs
-@@ -0,0 +1,618 @@
+@@ -0,0 +1,228 @@
 +use std::fs;
-+use std::path::Path;
-+use std::path::PathBuf;
++use std::path::{Path, PathBuf};
 +use std::sync::Arc;
 +
-+use crate::agent::AgentControl;
-+use crate::codex::Session;
-+use crate::codex::TurnContext;
++use crate::codex::{Session, TurnContext};
 +use crate::compact::InitialContextInjection;
-+use crate::compact::content_items_to_text;
-+use crate::config::AutoCompactMode;
 +use crate::config::Config;
 +use crate::error::Result as CodexResult;
 +use crate::protocol::CompactedItem;
++use codex_protocol::items::{ContextCompactionItem, TurnItem};
++use codex_protocol::models::{ContentItem, ResponseItem};
 +use chrono::Utc;
-+use codex_config::Constrained;
-+use codex_features::Feature;
 +use codex_protocol::ThreadId;
-+use codex_protocol::config_types::WebSearchMode;
-+use codex_protocol::items::ContextCompactionItem;
-+use codex_protocol::items::TurnItem;
-+use codex_protocol::models::ResponseItem;
-+use codex_protocol::permissions::FileSystemSandboxPolicy;
-+use codex_protocol::permissions::NetworkSandboxPolicy;
-+use codex_protocol::protocol::AskForApproval;
-+use codex_protocol::protocol::InitialHistory;
-+use codex_protocol::protocol::RolloutItem;
-+use codex_protocol::protocol::SandboxPolicy;
-+use codex_protocol::protocol::SessionSource;
-+use codex_protocol::protocol::SubAgentSource;
-+use codex_protocol::user_input::UserInput;
-+use codex_rollout::RolloutRecorder;
-+use codex_utils_absolute_path::AbsolutePathBuf;
-+use serde_json::json;
-+use tracing::warn;
 +
-+struct RolloutArchive {
-+    path: PathBuf,
-+    items: Vec<RolloutItem>,
-+}
++const RESET_CATCH_UP_NOTE_NAME: &str = "catch-up.md";
++const RESET_RECENT_SNIPPET_LIMIT: usize = 3;
 +
-+pub(crate) fn obsidian_graph_root(config: &Config) -> &Path {
-+    config.experimental_obsidian_graph_root.as_path()
++fn obsidian_graph_root(config: &Config) -> &Path {
++    &config.experimental_obsidian_graph_root
 +}
 +
 +pub(crate) fn thread_graph_root(config: &Config, thread_id: &ThreadId) -> PathBuf {
@@ -103,17 +806,24 @@ index 0000000..a17e063
 +
 +pub(crate) fn graph_continuity_instruction(config: &Config, thread_id: &ThreadId) -> String {
 +    let thread_root = thread_graph_root(config, thread_id);
++    let catch_up_path = thread_root.join(RESET_CATCH_UP_NOTE_NAME);
 +    let index_path = thread_root.join("index.md");
++    let continuity_start = if catch_up_path.exists() {
++        format!(
++            "Start with `{}` for the latest handoff, then use `{}` as the thread map.",
++            catch_up_path.display(),
++            index_path.display(),
++        )
++    } else {
++        format!(
++            "Start with `{}`, then consult `timeline/`, `themes/`, and the newest `segments/` entries.",
++            index_path.display(),
++        )
++    };
 +    format!(
-+        concat!(
-+            "Continuity mode is reset-based, not summary-based.\n",
-+            "When the context window fills, Codex exports the prior thread into an Obsidian-style graph and clears live history instead of carrying forward a compacted summary capsule.\n",
-+            "If older thread continuity matters, prefer the filesystem graph at `{}`.\n",
-+            "Start with `{}`, then consult `timeline/`, `themes/`, and the newest `segments/` entries.\n",
-+            "Treat the current workspace state and these graph notes as canonical over vague recollection."
-+        ),
++        "Continuity mode is reset-based, not summary-based. If older thread continuity matters, prefer the filesystem graph at `{}`. {}",
 +        thread_root.display(),
-+        index_path.display(),
++        continuity_start,
 +    )
 +}
 +
@@ -122,95 +832,40 @@ index 0000000..a17e063
 +    turn_context: Arc<TurnContext>,
 +    initial_context_injection: InitialContextInjection,
 +) -> CodexResult<()> {
-+    let compaction_item = TurnItem::ContextCompaction(ContextCompactionItem::new());
-+    sess.emit_turn_item_started(&turn_context, &compaction_item)
-+        .await;
++    let compaction_item = ContextCompactionItem::new();
++    sess.emit_turn_item_started(&turn_context, &TurnItem::ContextCompaction(compaction_item.clone())).await;
 +
 +    let history_snapshot = sess.clone_history().await;
 +    let history_items = history_snapshot.raw_items();
 +    let thread_root = thread_graph_root(&turn_context.config, &sess.conversation_id);
-+    let rollout_archive = load_rollout_archive(sess.as_ref()).await;
-+    let export_result = export_graph_segment(
++    
++    let exported_segment_root = export_graph_segment(
 +        &thread_root,
 +        &sess.conversation_id,
 +        &turn_context.sub_id,
 +        initial_context_injection,
 +        history_items,
-+        rollout_archive.as_ref(),
-+    );
++    ).ok();
 +
-+    let mut exported_segment_root = None;
-+    match export_result {
-+        Ok(segment_root) => {
-+            exported_segment_root = Some(segment_root);
-+        }
-+        Err(err) => {
-+            warn!(
-+                thread_id = %sess.conversation_id,
-+                turn_id = %turn_context.sub_id,
-+                graph_root = %thread_root.display(),
-+                "failed to export reset continuity graph: {err}"
-+            );
-+            sess.notify_background_event(
-+                &turn_context,
-+                format!(
-+                    "Context reset ran, but continuity export to {} failed: {err}",
-+                    thread_root.display()
-+                ),
-+            )
-+            .await;
-+        }
-+    }
++    let reset_map_capsule = build_reset_map_capsule(&turn_context.config, &sess.conversation_id, exported_segment_root.as_deref());
 +
-+    if let Some(segment_root) = exported_segment_root.as_ref()
-+        && turn_context
-+            .config
-+            .experimental_obsidian_graph_background_agent
-+    {
-+        spawn_graph_organizer_agent(
-+            &sess.services.agent_control,
-+            turn_context.as_ref(),
-+            thread_root.clone(),
-+            segment_root.clone(),
-+        );
-+    }
-+
-+    let (new_history, reference_context_item) = build_reset_replacement_history(
++    let (new_history, reference_context_item): (Vec<ResponseItem>, Option<codex_protocol::protocol::TurnContextItem>) = build_reset_replacement_history(
 +        sess.as_ref(),
 +        turn_context.as_ref(),
 +        initial_context_injection,
++        reset_map_capsule,
 +    )
 +    .await;
++
 +    let compacted_item = CompactedItem {
-+        message: format!(
-+            "Context reset. Continuity exported to {}",
-+            thread_root.display()
-+        ),
++        message: format!("Context reset. Continuity exported to {}", thread_root.display()),
 +        replacement_history: Some(new_history.clone()),
 +    };
 +
-+    sess.replace_compacted_history(new_history, reference_context_item, compacted_item)
-+        .await;
++    sess.replace_compacted_history(new_history, reference_context_item, compacted_item).await;
 +    sess.recompute_token_usage(&turn_context).await;
-+    sess.emit_turn_item_completed(&turn_context, compaction_item)
-+        .await;
-+
-+    let export_message = exported_segment_root.as_ref().map_or_else(
-+        || {
-+            format!(
-+                "Reset live context without a continuity summary capsule. Intended graph root: {}.",
-+                thread_root.display()
-+            )
-+        },
-+        |segment_root| {
-+            format!(
-+                "Reset live context after exporting continuity to {}.",
-+                segment_root.display()
-+            )
-+        },
-+    );
-+    sess.notify_background_event(&turn_context, export_message)
-+        .await;
++    sess.emit_turn_item_completed(&turn_context, TurnItem::ContextCompaction(compaction_item)).await;
++    
 +    Ok(())
 +}
 +
@@ -218,16 +873,47 @@ index 0000000..a17e063
 +    sess: &Session,
 +    turn_context: &TurnContext,
 +    initial_context_injection: InitialContextInjection,
-+) -> (
-+    Vec<ResponseItem>,
-+    Option<codex_protocol::protocol::TurnContextItem>,
-+) {
++    reset_map_capsule: ResponseItem,
++) -> (Vec<ResponseItem>, Option<codex_protocol::protocol::TurnContextItem>) {
++    let history_snapshot = sess.clone_history().await;
++    let history_items = history_snapshot.raw_items();
++    let mut recent_user_message = None;
++    for item in history_items.iter().rev() {
++        if let ResponseItem::Message { role, .. } = item {
++            if role == "user" {
++                recent_user_message = Some(item.clone());
++                break;
++            }
++        }
++    }
++
 +    match initial_context_injection {
-+        InitialContextInjection::DoNotInject => (Vec::new(), None),
++        InitialContextInjection::DoNotInject => {
++            let mut history = vec![reset_map_capsule];
++            if let Some(msg) = recent_user_message {
++                history.push(msg);
++            }
++            (history, None)
++        }
 +        InitialContextInjection::BeforeLastUserMessage => {
-+            let initial_context = sess.build_initial_context(turn_context).await;
++            let mut initial_context = sess.build_initial_context(turn_context).await;
++            initial_context.push(reset_map_capsule);
++            if let Some(msg) = recent_user_message {
++                initial_context.push(msg);
++            }
 +            (initial_context, Some(turn_context.to_turn_context_item()))
 +        }
++    }
++}
++
++fn build_reset_map_capsule(config: &Config, thread_id: &ThreadId, _segment_root: Option<&Path>) -> ResponseItem {
++    let content = graph_continuity_instruction(config, thread_id);
++    ResponseItem::Message {
++        id: None,
++        role: "system".to_string(),
++        content: vec![ContentItem::InputText { text: format!("Reset map capsule. {}", content) }],
++        phase: None,
++        end_turn: None,
 +    }
 +}
 +
@@ -235,440 +921,91 @@ index 0000000..a17e063
 +    thread_root: &Path,
 +    thread_id: &ThreadId,
 +    turn_id: &str,
-+    initial_context_injection: InitialContextInjection,
++    _initial_context_injection: InitialContextInjection,
 +    history_items: &[ResponseItem],
-+    rollout_archive: Option<&RolloutArchive>,
 +) -> std::io::Result<PathBuf> {
 +    let timestamp = Utc::now();
-+    let segment_id = format!(
-+        "{}-{}",
-+        timestamp.format("%Y%m%dT%H%M%SZ"),
-+        sanitize_path_component(turn_id)
-+    );
-+    let segments_root = thread_root.join("segments");
-+    let segment_root = segments_root.join(&segment_id);
++    let segment_id = format!("{}-{}", timestamp.format("%Y%m%dT%H%M%SZ"), turn_id);
++    let segment_root = thread_root.join("segments").join(&segment_id);
++    fs::create_dir_all(&segment_root)?;
++
 +    let messages_root = segment_root.join("messages");
-+    let timeline_root = thread_root.join("timeline");
-+    let themes_root = thread_root.join("themes");
-+
 +    fs::create_dir_all(&messages_root)?;
-+    fs::create_dir_all(&timeline_root)?;
-+    fs::create_dir_all(&themes_root)?;
 +
-+    let metadata = json!({
-+        "thread_id": thread_id.to_string(),
-+        "turn_id": turn_id,
-+        "captured_at_utc": timestamp.to_rfc3339(),
-+        "reset_mode": "context_reset",
-+        "initial_context_injection": match initial_context_injection {
-+            InitialContextInjection::BeforeLastUserMessage => "before_last_user_message",
-+            InitialContextInjection::DoNotInject => "do_not_inject",
-+        },
-+        "raw_item_count": history_items.len(),
-+        "rollout_archive_path": rollout_archive.map(|archive| archive.path.display().to_string()),
-+        "rollout_item_count": rollout_archive.map(|archive| archive.items.len()),
-+    });
-+    fs::write(
-+        segment_root.join("thread_meta.json"),
-+        serde_json::to_vec_pretty(&metadata)?,
-+    )?;
 +    fs::write(
 +        segment_root.join("history.json"),
-+        serde_json::to_vec_pretty(history_items)?,
-+    )?;
-+    if let Some(rollout_archive) = rollout_archive {
-+        fs::write(
-+            segment_root.join("rollout_items.json"),
-+            serde_json::to_vec_pretty(&rollout_archive.items)?,
-+        )?;
-+        fs::write(
-+            segment_root.join("rollout_path.txt"),
-+            format!("{}\n", rollout_archive.path.display()),
-+        )?;
-+    }
-+
-+    let graph_items = graph_items_from_history(history_items);
-+    for (index, graph_item) in graph_items.iter().enumerate() {
-+        let file_name = format!("{:04}-{}.md", index + 1, graph_item.slug);
-+        fs::write(
-+            messages_root.join(file_name),
-+            render_graph_item_markdown(thread_id, &segment_id, index + 1, graph_item),
-+        )?;
-+    }
-+
-+    fs::write(
-+        segment_root.join("segment.md"),
-+        render_segment_markdown(
-+            thread_id,
-+            turn_id,
-+            &segment_id,
-+            &graph_items,
-+            rollout_archive,
-+        ),
++        serde_json::to_vec_pretty(history_items).map_err(|e| std::io::Error::new(std::io::ErrorKind::Other, e))?,
 +    )?;
 +
-+    ensure_placeholder_notes(thread_root, thread_id)?;
++    write_reset_catch_up_note(thread_root, thread_id, &segment_root, history_items)?;
 +    write_thread_index(thread_root, thread_id)?;
 +    Ok(segment_root)
 +}
 +
-+#[derive(Clone)]
-+struct GraphItem {
-+    title: String,
-+    slug: String,
-+    body: String,
-+}
-+
-+fn graph_items_from_history(history_items: &[ResponseItem]) -> Vec<GraphItem> {
-+    history_items
-+        .iter()
-+        .filter_map(graph_item_from_response_item)
-+        .collect()
-+}
-+
-+fn graph_item_from_response_item(item: &ResponseItem) -> Option<GraphItem> {
-+    match item {
-+        ResponseItem::Message { role, content, .. } => {
-+            if role == "developer" {
-+                return None;
-+            }
-+            let text = content_items_to_text(content)?;
-+            let trimmed = text.trim();
-+            if trimmed.is_empty() {
-+                return None;
-+            }
-+            Some(GraphItem {
-+                title: role.to_string(),
-+                slug: sanitize_path_component(role),
-+                body: trimmed.to_string(),
-+            })
-+        }
-+        ResponseItem::FunctionCall {
-+            name, arguments, ..
-+        } => Some(GraphItem {
-+            title: format!("tool call {name}"),
-+            slug: format!("tool-call-{}", sanitize_path_component(name)),
-+            body: format!("Arguments:\n```json\n{}\n```", pretty_json(arguments)),
-+        }),
-+        ResponseItem::FunctionCallOutput { call_id, output } => Some(GraphItem {
-+            title: format!("tool output {call_id}"),
-+            slug: "tool-output".to_string(),
-+            body: output.body.to_text().unwrap_or_else(|| {
-+                format!(
-+                    "Structured output:\n```json\n{}\n```",
-+                    serde_json::to_string_pretty(item).unwrap_or_else(|_| "{}".to_string())
-+                )
-+            }),
-+        }),
-+        ResponseItem::CustomToolCall { name, input, .. } => Some(GraphItem {
-+            title: format!("custom tool call {name}"),
-+            slug: format!("custom-tool-call-{}", sanitize_path_component(name)),
-+            body: format!("Input:\n```text\n{input}\n```"),
-+        }),
-+        ResponseItem::CustomToolCallOutput { name, output, .. } => Some(GraphItem {
-+            title: format!(
-+                "custom tool output {}",
-+                name.as_deref().unwrap_or("unnamed")
-+            ),
-+            slug: "custom-tool-output".to_string(),
-+            body: output.body.to_text().unwrap_or_else(|| {
-+                format!(
-+                    "Structured output:\n```json\n{}\n```",
-+                    serde_json::to_string_pretty(item).unwrap_or_else(|_| "{}".to_string())
-+                )
-+            }),
-+        }),
-+        ResponseItem::LocalShellCall { .. }
-+        | ResponseItem::ToolSearchCall { .. }
-+        | ResponseItem::ToolSearchOutput { .. }
-+        | ResponseItem::WebSearchCall { .. }
-+        | ResponseItem::ImageGenerationCall { .. } => Some(GraphItem {
-+            title: response_item_label(item).to_string(),
-+            slug: sanitize_path_component(response_item_label(item)),
-+            body: format!(
-+                "```json\n{}\n```",
-+                serde_json::to_string_pretty(item).unwrap_or_else(|_| "{}".to_string())
-+            ),
-+        }),
-+        ResponseItem::Reasoning { .. }
-+        | ResponseItem::GhostSnapshot { .. }
-+        | ResponseItem::Compaction { .. }
-+        | ResponseItem::Other => None,
-+    }
-+}
-+
-+fn render_graph_item_markdown(
++fn write_reset_catch_up_note(
++    thread_root: &Path,
 +    thread_id: &ThreadId,
-+    segment_id: &str,
-+    sequence: usize,
-+    graph_item: &GraphItem,
-+) -> String {
-+    format!(
-+        concat!(
-+            "---\n",
-+            "thread_id: {}\n",
-+            "segment_id: {}\n",
-+            "sequence: {}\n",
-+            "title: {}\n",
-+            "---\n\n",
-+            "# {:04} {}\n\n",
-+            "[[../segment]]\n\n",
-+            "{}\n"
-+        ),
-+        thread_id,
-+        segment_id,
-+        sequence,
-+        graph_item.title,
-+        sequence,
-+        graph_item.title,
-+        graph_item.body,
-+    )
-+}
++    _segment_root: &Path,
++    history_items: &[ResponseItem],
++) -> std::io::Result<()> {
++    let catch_up_path = thread_root.join(RESET_CATCH_UP_NOTE_NAME);
++    let index_path = thread_root.join("index.md");
++    let recent_user_messages: Vec<String> = history_items.iter().rev().filter_map(|item| {
++        if let ResponseItem::Message { role, content, .. } = item {
++            if role == "user" {
++                let text = content.iter().filter_map(|c| if let ContentItem::InputText{text} = c { Some(text.as_str()) } else { None }).collect::<Vec<_>>().join("\n");
++                Some(format!("- Latest user ask: {}", text))
++            } else { None }
++        } else { None }
++    }).take(RESET_RECENT_SNIPPET_LIMIT).collect();
 +
-+fn render_segment_markdown(
-+    thread_id: &ThreadId,
-+    turn_id: &str,
-+    segment_id: &str,
-+    graph_items: &[GraphItem],
-+    rollout_archive: Option<&RolloutArchive>,
-+) -> String {
 +    let mut body = format!(
-+        concat!(
-+            "# Segment {}\n\n",
-+            "- Thread: `{}`\n",
-+            "- Turn: `{}`\n",
-+            "- Raw history: `history.json`\n\n",
-+            "{}",
-+            "## Notes\n"
-+        ),
-+        segment_id,
++        r#"# Reset Catch-Up
++
++- Thread: `{}`
++- Read this note first, then open `{}` for the full thread map.
++
++## Recent Direction
++"#,
 +        thread_id,
-+        turn_id,
-+        rollout_archive_section(rollout_archive)
++        index_path.display(),
 +    );
-+    if graph_items.is_empty() {
-+        body.push_str("- No normalized graph items were extracted from this segment.\n");
++    if recent_user_messages.is_empty() {
++        body.push_str("- No recent user messages found.\n");
 +    } else {
-+        for (index, graph_item) in graph_items.iter().enumerate() {
-+            body.push_str(&format!(
-+                "- [[messages/{:04}-{}|{:04} {}]]\n",
-+                index + 1,
-+                graph_item.slug,
-+                index + 1,
-+                graph_item.title
-+            ));
-+        }
-+    }
-+    body
-+}
-+
-+fn ensure_placeholder_notes(thread_root: &Path, thread_id: &ThreadId) -> std::io::Result<()> {
-+    let overview_path = thread_root.join("timeline").join("overview.md");
-+    if !overview_path.exists() {
-+        fs::write(
-+            overview_path,
-+            format!(
-+                "# Timeline {thread_id}\n\n- Background organizer updates this file with chronological continuity.\n"
-+            ),
-+        )?;
++        body.push_str(&recent_user_messages.join("\n"));
 +    }
 +
-+    let themes_index_path = thread_root.join("themes").join("index.md");
-+    if !themes_index_path.exists() {
-+        fs::write(
-+            themes_index_path,
-+            format!(
-+                "# Themes {thread_id}\n\n- Background organizer updates this index with durable semantic themes.\n"
-+            ),
-+        )?;
-+    }
-+    Ok(())
++    fs::write(catch_up_path, body)
 +}
 +
 +fn write_thread_index(thread_root: &Path, thread_id: &ThreadId) -> std::io::Result<()> {
 +    let segments_root = thread_root.join("segments");
-+    let mut segment_names = fs::read_dir(&segments_root)?
-+        .filter_map(std::result::Result::ok)
-+        .filter_map(|entry| {
-+            entry
-+                .file_type()
-+                .ok()
-+                .filter(std::fs::FileType::is_dir)
-+                .map(|_| entry.file_name().to_string_lossy().into_owned())
-+        })
-+        .collect::<Vec<_>>();
++    let mut segment_names = if segments_root.exists() {
++        fs::read_dir(&segments_root)?
++            .filter_map(Result::ok)
++            .filter_map(|entry| {
++                entry.file_type().ok().filter(|ft| ft.is_dir()).map(|_| entry.file_name().to_string_lossy().into_owned())
++            })
++            .collect::<Vec<_>>()
++    } else {
++        Vec::new()
++    };
 +    segment_names.sort();
 +    segment_names.reverse();
 +
-+    let mut body = format!(
-+        "# Thread {thread_id}\n\n## Continuity Entry Points\n- [[timeline/overview]]\n- [[themes/index]]\n\n## Segments\n"
-+    );
++    let mut body = format!(r#"# Thread {}
++
++## Segments
++"#, thread_id);
 +    if segment_names.is_empty() {
 +        body.push_str("- No segments exported yet.\n");
 +    } else {
-+        for segment_name in segment_names {
-+            body.push_str(&format!(
-+                "- [[segments/{segment_name}/segment|{segment_name}]]\n"
-+            ));
++        for name in segment_names {
++            body.push_str(&format!("- [[segments/{}/segment|{}]]\n", name, name));
 +        }
 +    }
 +    fs::write(thread_root.join("index.md"), body)
-+}
-+
-+fn spawn_graph_organizer_agent(
-+    agent_control: &AgentControl,
-+    turn_context: &TurnContext,
-+    thread_root: PathBuf,
-+    segment_root: PathBuf,
-+) {
-+    let Ok(thread_root_abs) = AbsolutePathBuf::from_absolute_path(&thread_root) else {
-+        warn!(
-+            graph_root = %thread_root.display(),
-+            "failed to resolve graph root for organizer agent"
-+        );
-+        return;
-+    };
-+
-+    let mut agent_config = turn_context.config.as_ref().clone();
-+    agent_config.cwd = thread_root_abs.clone();
-+    agent_config.model_auto_compact_token_limit = Some(i64::MAX);
-+    agent_config.experimental_auto_compact_mode = AutoCompactMode::Summarize;
-+    agent_config.experimental_obsidian_graph_background_agent = false;
-+    agent_config.permissions.approval_policy = Constrained::allow_only(AskForApproval::Never);
-+    agent_config.permissions.network = None;
-+    agent_config.web_search_mode = Constrained::allow_only(WebSearchMode::Disabled);
-+
-+    let sandbox_policy = SandboxPolicy::WorkspaceWrite {
-+        writable_roots: vec![thread_root_abs],
-+        read_only_access: Default::default(),
-+        network_access: false,
-+        exclude_tmpdir_env_var: false,
-+        exclude_slash_tmp: false,
-+    };
-+    agent_config.permissions.sandbox_policy = Constrained::allow_only(sandbox_policy.clone());
-+    agent_config.permissions.file_system_sandbox_policy =
-+        FileSystemSandboxPolicy::from(&sandbox_policy);
-+    agent_config.permissions.network_sandbox_policy = NetworkSandboxPolicy::from(&sandbox_policy);
-+
-+    let _ = agent_config.features.disable(Feature::SpawnCsv);
-+    let _ = agent_config.features.disable(Feature::Collab);
-+    let _ = agent_config.features.disable(Feature::MemoryTool);
-+
-+    let prompt = vec![UserInput::Text {
-+        text: build_graph_organizer_prompt(&thread_root, &segment_root),
-+        text_elements: Vec::new(),
-+    }];
-+    let source = SessionSource::SubAgent(SubAgentSource::Other("obsidian_graph_reset".to_string()));
-+    let agent_control = agent_control.clone();
-+    tokio::spawn(async move {
-+        if let Err(err) = agent_control
-+            .spawn_agent(agent_config, prompt, Some(source))
-+            .await
-+        {
-+            warn!(
-+                graph_root = %thread_root.display(),
-+                latest_segment = %segment_root.display(),
-+                "failed to spawn graph organizer agent: {err}"
-+            );
-+        }
-+    });
-+}
-+
-+fn build_graph_organizer_prompt(thread_root: &Path, segment_root: &Path) -> String {
-+    format!(
-+        concat!(
-+            "Organize the reset continuity graph in `{}`.\n",
-+            "Read the newest raw segment at `{}` and update the graph so future fresh-context turns can recover chronology and themes without a compacted summary capsule.\n",
-+            "Rules:\n",
-+            "- Work only inside this graph root.\n",
-+            "- Do not modify files under `segments/`.\n",
-+            "- When present, use `history.json`, `rollout_items.json`, and `rollout_path.txt` as the raw archival substrate behind the notes.\n",
-+            "- Update `index.md`, `timeline/overview.md`, and `themes/index.md`.\n",
-+            "- Create additional notes under `timeline/` or `themes/` when useful.\n",
-+            "- Use Obsidian wikilinks.\n",
-+            "- Prefer chronology first, then stable themes, decisions, open loops, and unresolved contradictions.\n",
-+            "- Keep notes concise, concrete, and incremental.\n"
-+        ),
-+        thread_root.display(),
-+        segment_root.display(),
-+    )
-+}
-+
-+fn response_item_label(item: &ResponseItem) -> &'static str {
-+    match item {
-+        ResponseItem::Message { .. } => "message",
-+        ResponseItem::Reasoning { .. } => "reasoning",
-+        ResponseItem::LocalShellCall { .. } => "local-shell-call",
-+        ResponseItem::FunctionCall { .. } => "function-call",
-+        ResponseItem::ToolSearchCall { .. } => "tool-search-call",
-+        ResponseItem::FunctionCallOutput { .. } => "function-call-output",
-+        ResponseItem::CustomToolCall { .. } => "custom-tool-call",
-+        ResponseItem::CustomToolCallOutput { .. } => "custom-tool-call-output",
-+        ResponseItem::ToolSearchOutput { .. } => "tool-search-output",
-+        ResponseItem::WebSearchCall { .. } => "web-search-call",
-+        ResponseItem::ImageGenerationCall { .. } => "image-generation-call",
-+        ResponseItem::GhostSnapshot { .. } => "ghost-snapshot",
-+        ResponseItem::Compaction { .. } => "compaction",
-+        ResponseItem::Other => "other",
-+    }
-+}
-+
-+fn pretty_json(raw: &str) -> String {
-+    serde_json::from_str::<serde_json::Value>(raw)
-+        .and_then(|value| serde_json::to_string_pretty(&value))
-+        .unwrap_or_else(|_| raw.to_string())
-+}
-+
-+fn sanitize_path_component(input: &str) -> String {
-+    let sanitized = input
-+        .chars()
-+        .map(|ch| {
-+            if ch.is_ascii_alphanumeric() || matches!(ch, '-' | '_') {
-+                ch
-+            } else {
-+                '-'
-+            }
-+        })
-+        .collect::<String>()
-+        .trim_matches('-')
-+        .to_string();
-+    if sanitized.is_empty() {
-+        "segment".to_string()
-+    } else {
-+        sanitized
-+    }
-+}
-+
-+fn rollout_archive_section(rollout_archive: Option<&RolloutArchive>) -> String {
-+    match rollout_archive {
-+        Some(archive) => format!(
-+            concat!(
-+                "- Raw rollout items: `rollout_items.json`\n",
-+                "- Rollout source path: `{}`\n\n"
-+            ),
-+            archive.path.display()
-+        ),
-+        None => String::new(),
-+    }
-+}
-+
-+async fn load_rollout_archive(sess: &Session) -> Option<RolloutArchive> {
-+    let rollout_path = sess.hook_transcript_path().await?;
-+    match RolloutRecorder::get_rollout_history(rollout_path.as_path()).await {
-+        Ok(InitialHistory::New) => None,
-+        Ok(initial_history) => Some(RolloutArchive {
-+            path: rollout_path,
-+            items: initial_history.get_rollout_items(),
-+        }),
-+        Err(err) => {
-+            warn!(
-+                thread_id = %sess.conversation_id,
-+                rollout_path = %rollout_path.display(),
-+                "failed to load rollout archive for reset export: {err}"
-+            );
-+            None
-+        }
-+    }
 +}
 diff --git a/codex-rs/core/src/codex.rs b/codex-rs/core/src/codex.rs
 index 3a27a88..f92463b 100644
@@ -726,182 +1063,57 @@ index 3a27a88..f92463b 100644
          run_inline_remote_auto_compact_task(
              Arc::clone(sess),
 diff --git a/codex-rs/core/src/compact.rs b/codex-rs/core/src/compact.rs
-index 82fd5c1..ca2b54b 100644
+index 82fd5c1..a334066 100644
 --- a/codex-rs/core/src/compact.rs
 +++ b/codex-rs/core/src/compact.rs
-@@ -2,6 +2,7 @@ use std::sync::Arc;
- 
- use crate::ModelProviderInfo;
- use crate::Prompt;
-+use crate::auto_compact_reset::run_auto_reset_compact;
- use crate::client::ModelClientSession;
- use crate::client_common::ResponseEvent;
- #[cfg(test)]
-@@ -9,6 +10,7 @@ use crate::codex::PreviousTurnSettings;
+@@ -9,6 +9,8 @@ use crate::codex::PreviousTurnSettings;
  use crate::codex::Session;
  use crate::codex::TurnContext;
  use crate::codex::get_last_assistant_message_from_turn;
++use crate::auto_compact_reset::run_auto_reset_compact;
 +use crate::config::AutoCompactMode;
  use crate::error::CodexErr;
  use crate::error::Result as CodexResult;
  use crate::protocol::CompactedItem;
-@@ -78,6 +80,13 @@ pub(crate) async fn run_compact_task(
-         collaboration_mode_kind: turn_context.collaboration_mode.mode,
-     });
-     sess.send_event(&turn_context, start_event).await;
+@@ -93,6 +95,12 @@ async fn run_compact_task_inner(
+     input: Vec<UserInput>,
+     initial_context_injection: InitialContextInjection,
+ ) -> CodexResult<()> {
 +    if matches!(
 +        turn_context.config.experimental_auto_compact_mode,
 +        AutoCompactMode::Reset
 +    ) {
-+        return run_auto_reset_compact(sess, turn_context, InitialContextInjection::DoNotInject)
-+            .await;
++        return run_auto_reset_compact(sess, turn_context, initial_context_injection).await;
 +    }
-     run_compact_task_inner(
-         sess.clone(),
-         turn_context,
-diff --git a/codex-rs/core/src/config/config_tests.rs b/codex-rs/core/src/config/config_tests.rs
-index 949906a..3b48443 100644
---- a/codex-rs/core/src/config/config_tests.rs
-+++ b/codex-rs/core/src/config/config_tests.rs
-@@ -3107,6 +3107,58 @@ fn loads_compact_prompt_from_file() -> std::io::Result<()> {
-     Ok(())
- }
- 
-+#[test]
-+fn load_config_defaults_reset_auto_compact_mode_and_graph_root() -> std::io::Result<()> {
-+    let codex_home = TempDir::new()?;
-+    let config = Config::load_from_base_config_with_overrides(
-+        ConfigToml::default(),
-+        ConfigOverrides::default(),
-+        codex_home.path().to_path_buf(),
-+    )?;
-+
-+    assert_eq!(
-+        config.experimental_auto_compact_mode,
-+        AutoCompactMode::Reset
-+    );
-+    assert_eq!(
-+        config.experimental_obsidian_graph_root,
-+        codex_home.path().join("obsidian_graph")
-+    );
-+    assert!(config.experimental_obsidian_graph_background_agent);
-+
-+    Ok(())
-+}
-+
-+#[test]
-+fn load_config_reads_obsidian_graph_settings() -> std::io::Result<()> {
-+    let codex_home = TempDir::new()?;
-+    let graph_root = codex_home.path().join("graph-root");
-+    let cfg: ConfigToml = toml::from_str(&format!(
-+        r#"
-+experimental_auto_compact_mode = "summarize"
-+experimental_obsidian_graph_root = "{}"
-+experimental_obsidian_graph_background_agent = false
-+"#,
-+        graph_root.display()
-+    ))
-+    .expect("TOML deserialization should succeed");
-+
-+    let config = Config::load_from_base_config_with_overrides(
-+        cfg,
-+        ConfigOverrides::default(),
-+        codex_home.path().to_path_buf(),
-+    )?;
-+
-+    assert_eq!(
-+        config.experimental_auto_compact_mode,
-+        AutoCompactMode::Summarize
-+    );
-+    assert_eq!(config.experimental_obsidian_graph_root, graph_root);
-+    assert!(!config.experimental_obsidian_graph_background_agent);
-+
-+    Ok(())
-+}
-+
- #[test]
- fn load_config_uses_requirements_guardian_developer_instructions() -> std::io::Result<()> {
-     let codex_home = TempDir::new()?;
-@@ -4435,6 +4487,9 @@ fn test_precedence_fixture_with_o3_profile() -> std::io::Result<()> {
-             developer_instructions: None,
-             guardian_developer_instructions: None,
-             compact_prompt: None,
-+            experimental_auto_compact_mode: AutoCompactMode::Reset,
-+            experimental_obsidian_graph_root: fixture.codex_home().join("obsidian_graph"),
-+            experimental_obsidian_graph_background_agent: true,
-             commit_attribution: None,
-             forced_chatgpt_workspace_id: None,
-             forced_login_method: None,
-@@ -4578,6 +4633,9 @@ fn test_precedence_fixture_with_gpt3_profile() -> std::io::Result<()> {
-         developer_instructions: None,
-         guardian_developer_instructions: None,
-         compact_prompt: None,
-+        experimental_auto_compact_mode: AutoCompactMode::Reset,
-+        experimental_obsidian_graph_root: fixture.codex_home().join("obsidian_graph"),
-+        experimental_obsidian_graph_background_agent: true,
-         commit_attribution: None,
-         forced_chatgpt_workspace_id: None,
-         forced_login_method: None,
-@@ -4719,6 +4777,9 @@ fn test_precedence_fixture_with_zdr_profile() -> std::io::Result<()> {
-         developer_instructions: None,
-         guardian_developer_instructions: None,
-         compact_prompt: None,
-+        experimental_auto_compact_mode: AutoCompactMode::Reset,
-+        experimental_obsidian_graph_root: fixture.codex_home().join("obsidian_graph"),
-+        experimental_obsidian_graph_background_agent: true,
-         commit_attribution: None,
-         forced_chatgpt_workspace_id: None,
-         forced_login_method: None,
-@@ -4846,6 +4907,9 @@ fn test_precedence_fixture_with_gpt5_profile() -> std::io::Result<()> {
-         developer_instructions: None,
-         guardian_developer_instructions: None,
-         compact_prompt: None,
-+        experimental_auto_compact_mode: AutoCompactMode::Reset,
-+        experimental_obsidian_graph_root: fixture.codex_home().join("obsidian_graph"),
-+        experimental_obsidian_graph_background_agent: true,
-         commit_attribution: None,
-         forced_chatgpt_workspace_id: None,
-         forced_login_method: None,
+     let compaction_item = TurnItem::ContextCompaction(ContextCompactionItem::new());
+     sess.emit_turn_item_started(&turn_context, &compaction_item)
+         .await;
 diff --git a/codex-rs/core/src/config/mod.rs b/codex-rs/core/src/config/mod.rs
-index b2b55fe..864c236 100644
+index b2b55fe..21fa265 100644
 --- a/codex-rs/core/src/config/mod.rs
 +++ b/codex-rs/core/src/config/mod.rs
-@@ -305,6 +305,17 @@ pub struct Config {
+@@ -305,6 +305,10 @@ pub struct Config {
      /// Compact prompt override.
      pub compact_prompt: Option<String>,
  
-+    /// Strategy to use when automatic context compaction is triggered.
 +    pub experimental_auto_compact_mode: AutoCompactMode,
-+
-+    /// Root folder used to persist thread continuity graphs outside the live
-+    /// model context.
 +    pub experimental_obsidian_graph_root: PathBuf,
-+
-+    /// When `true`, spawn a background organizer agent after reset-style
-+    /// auto-compaction exports a new graph segment.
 +    pub experimental_obsidian_graph_background_agent: bool,
 +
      /// Optional commit attribution text for commit message co-author trailers.
      ///
      /// - `None`: use default attribution (`Codex <noreply@openai.com>`)
-@@ -1168,6 +1179,16 @@ pub struct ConfigToml {
-     /// Compact prompt used for history compaction.
-     pub compact_prompt: Option<String>,
- 
-+    /// Strategy to use when the automatic compaction threshold is hit.
+@@ -1409,6 +1413,9 @@ pub struct ConfigToml {
+     #[schemars(skip)]
+     pub experimental_instructions_file: Option<AbsolutePathBuf>,
+     pub experimental_compact_prompt_file: Option<AbsolutePathBuf>,
 +    pub experimental_auto_compact_mode: Option<AutoCompactMode>,
-+
-+    /// Root folder for exported thread continuity graphs.
 +    pub experimental_obsidian_graph_root: Option<AbsolutePathBuf>,
-+
-+    /// Whether reset-style auto-compaction should spawn a background graph
-+    /// organizer agent after exporting a segment.
 +    pub experimental_obsidian_graph_background_agent: Option<bool>,
-+
-     /// Optional commit attribution text for commit message co-author trailers.
-     ///
-     /// Set to an empty string to disable automatic commit attribution.
-@@ -1456,6 +1477,14 @@ impl ProjectConfig {
+     pub experimental_use_unified_exec_tool: Option<bool>,
+     pub experimental_use_freeform_apply_patch: Option<bool>,
+     /// Preferred OSS provider for local models, e.g. "lmstudio" or "ollama".
+@@ -1456,6 +1463,14 @@ impl ProjectConfig {
      }
  }
  
@@ -916,7 +1128,7 @@ index b2b55fe..864c236 100644
  #[derive(Debug, Clone, Default, PartialEq, Eq)]
  pub struct RealtimeAudioConfig {
      pub microphone: Option<String>,
-@@ -2444,6 +2473,15 @@ impl Config {
+@@ -2444,6 +2459,15 @@ impl Config {
              "experimental compact prompt file",
          )?;
          let compact_prompt = compact_prompt.or(file_compact_prompt);
@@ -932,16 +1144,16 @@ index b2b55fe..864c236 100644
          let js_repl_node_path = js_repl_node_path_override
              .or(config_profile.js_repl_node_path.map(Into::into))
              .or(cfg.js_repl_node_path.map(Into::into));
-@@ -2589,6 +2627,9 @@ impl Config {
-             personality,
-             developer_instructions,
-             compact_prompt,
+@@ -2687,6 +2711,9 @@ impl Config {
+                 .unwrap_or(false),
+             active_profile: active_profile_name,
+             active_project,
 +            experimental_auto_compact_mode,
 +            experimental_obsidian_graph_root,
 +            experimental_obsidian_graph_background_agent,
-             commit_attribution,
-             // The config.toml omits "_mode" because it's a config file. However, "_mode"
-             // is important in code to differentiate the mode from the store implementation.
+             windows_wsl_setup_acknowledged: cfg.windows_wsl_setup_acknowledged.unwrap_or(false),
+             notices: cfg.notice.unwrap_or_default(),
+             check_for_update_on_startup,
 diff --git a/codex-rs/core/src/lib.rs b/codex-rs/core/src/lib.rs
 index 1ed3250..f4c06b4 100644
 --- a/codex-rs/core/src/lib.rs
@@ -954,294 +1166,3 @@ index 1ed3250..f4c06b4 100644
  mod client;
  mod client_common;
  pub mod codex;
-diff --git a/codex-rs/core/tests/suite/compact.rs b/codex-rs/core/tests/suite/compact.rs
-index a54d740..d9770d3 100644
---- a/codex-rs/core/tests/suite/compact.rs
-+++ b/codex-rs/core/tests/suite/compact.rs
-@@ -4,6 +4,7 @@ use codex_core::ModelProviderInfo;
- use codex_core::built_in_model_providers;
- use codex_core::compact::SUMMARIZATION_PROMPT;
- use codex_core::compact::SUMMARY_PREFIX;
-+use codex_core::config::AutoCompactMode;
- use codex_core::config::Config;
- use codex_features::Feature;
- use codex_protocol::items::TurnItem;
-@@ -29,6 +30,7 @@ use core_test_support::skip_if_no_network;
- use core_test_support::test_codex::test_codex;
- use core_test_support::wait_for_event;
- use core_test_support::wait_for_event_match;
-+use std::path::Path;
- use std::path::PathBuf;
- 
- use core_test_support::responses::ev_assistant_message;
-@@ -140,6 +142,29 @@ fn assert_pre_sampling_switch_compaction_requests(
-     );
- }
- 
-+fn graph_thread_root(config: &Config, session_id: &codex_protocol::ThreadId) -> PathBuf {
-+    config
-+        .experimental_obsidian_graph_root
-+        .join(session_id.to_string())
-+}
-+
-+fn exported_segment_roots(thread_root: &Path) -> Vec<PathBuf> {
-+    let segments_root = thread_root.join("segments");
-+    let mut entries = std::fs::read_dir(&segments_root)
-+        .unwrap_or_else(|err| panic!("failed to read {}: {err}", segments_root.display()))
-+        .filter_map(|entry| entry.ok())
-+        .filter_map(|entry| {
-+            entry
-+                .file_type()
-+                .ok()
-+                .filter(|file_type| file_type.is_dir())
-+                .map(|_| entry.path())
-+        })
-+        .collect::<Vec<_>>();
-+    entries.sort();
-+    entries
-+}
-+
- async fn assert_compaction_uses_turn_lifecycle_id(codex: &std::sync::Arc<codex_core::CodexThread>) {
-     let mut turn_started_id = None;
-     let mut turn_completed_id = None;
-@@ -555,6 +580,71 @@ async fn manual_compact_emits_api_and_local_token_usage_events() {
-     );
- }
- 
-+#[tokio::test(flavor = "multi_thread", worker_threads = 2)]
-+async fn manual_compact_reset_exports_graph_and_skips_summary_request() {
-+    skip_if_no_network!();
-+
-+    let server = start_mock_server().await;
-+    let sse1 = sse(vec![
-+        ev_assistant_message("m1", FIRST_REPLY),
-+        ev_completed("r1"),
-+    ]);
-+    let request_log = mount_sse_sequence(&server, vec![sse1]).await;
-+
-+    let model_provider = non_openai_model_provider(&server);
-+    let mut builder = test_codex().with_config(move |config| {
-+        config.model_provider = model_provider;
-+        config.experimental_auto_compact_mode = AutoCompactMode::Reset;
-+        config.experimental_obsidian_graph_background_agent = false;
-+    });
-+    let test = builder.build(&server).await.unwrap();
-+    let thread_root = graph_thread_root(&test.config, &test.session_configured.session_id);
-+
-+    test.codex
-+        .submit(Op::UserInput {
-+            items: vec![UserInput::Text {
-+                text: "manual reset compact".into(),
-+                text_elements: Vec::new(),
-+            }],
-+            final_output_json_schema: None,
-+        })
-+        .await
-+        .unwrap();
-+    wait_for_event(&test.codex, |ev| matches!(ev, EventMsg::TurnComplete(_))).await;
-+
-+    test.codex.submit(Op::Compact).await.unwrap();
-+    wait_for_event(&test.codex, |ev| matches!(ev, EventMsg::TurnComplete(_))).await;
-+
-+    assert_eq!(
-+        request_log.requests().len(),
-+        1,
-+        "reset-mode manual /compact should not make a separate summary model request"
-+    );
-+
-+    let segment_roots = exported_segment_roots(&thread_root);
-+    assert_eq!(
-+        segment_roots.len(),
-+        1,
-+        "expected one exported graph segment"
-+    );
-+    let segment_root = &segment_roots[0];
-+    assert!(thread_root.join("index.md").exists());
-+    assert!(thread_root.join("timeline").join("overview.md").exists());
-+    assert!(thread_root.join("themes").join("index.md").exists());
-+    assert!(segment_root.join("segment.md").exists());
-+    assert!(segment_root.join("history.json").exists());
-+    assert!(segment_root.join("rollout_items.json").exists());
-+    assert!(segment_root.join("rollout_path.txt").exists());
-+    assert!(segment_root.join("thread_meta.json").exists());
-+
-+    let history_text =
-+        std::fs::read_to_string(segment_root.join("history.json")).expect("read exported history");
-+    assert!(
-+        history_text.contains("manual reset compact"),
-+        "graph export should preserve the raw pre-reset conversation"
-+    );
-+}
-+
- #[tokio::test(flavor = "multi_thread", worker_threads = 2)]
- async fn manual_compact_emits_context_compaction_items() {
-     skip_if_no_network!();
-@@ -1395,6 +1485,153 @@ async fn auto_compact_runs_after_token_limit_hit() {
- }
- 
- // Windows CI only: bump to 4 workers to prevent SSE/event starvation and test timeouts.
-+#[cfg_attr(windows, tokio::test(flavor = "multi_thread", worker_threads = 4))]
-+#[cfg_attr(not(windows), tokio::test(flavor = "multi_thread", worker_threads = 2))]
-+async fn auto_compact_reset_exports_graph_and_preserves_recent_user_messages() {
-+    skip_if_no_network!();
-+
-+    let server = start_mock_server().await;
-+
-+    let sse1 = sse(vec![
-+        ev_assistant_message("m1", FIRST_REPLY),
-+        ev_completed_with_tokens("r1", 70_000),
-+    ]);
-+    let sse2 = sse(vec![
-+        ev_assistant_message("m2", "SECOND_REPLY"),
-+        ev_completed_with_tokens("r2", 330_000),
-+    ]);
-+    let sse3 = sse(vec![
-+        ev_assistant_message("m3", FINAL_REPLY),
-+        ev_completed_with_tokens("r3", 120),
-+    ]);
-+    let request_log = mount_sse_sequence(&server, vec![sse1, sse2, sse3]).await;
-+
-+    let model_provider = non_openai_model_provider(&server);
-+    let mut builder = test_codex().with_config(move |config| {
-+        config.model_provider = model_provider;
-+        config.experimental_auto_compact_mode = AutoCompactMode::Reset;
-+        config.experimental_obsidian_graph_background_agent = false;
-+        config.model_auto_compact_token_limit = Some(200_000);
-+    });
-+    let test = builder.build(&server).await.unwrap();
-+    let thread_root = graph_thread_root(&test.config, &test.session_configured.session_id);
-+
-+    test.codex
-+        .submit(Op::UserInput {
-+            items: vec![UserInput::Text {
-+                text: FIRST_AUTO_MSG.into(),
-+                text_elements: Vec::new(),
-+            }],
-+            final_output_json_schema: None,
-+        })
-+        .await
-+        .unwrap();
-+    wait_for_event(&test.codex, |ev| matches!(ev, EventMsg::TurnComplete(_))).await;
-+
-+    test.codex
-+        .submit(Op::UserInput {
-+            items: vec![UserInput::Text {
-+                text: SECOND_AUTO_MSG.into(),
-+                text_elements: Vec::new(),
-+            }],
-+            final_output_json_schema: None,
-+        })
-+        .await
-+        .unwrap();
-+    wait_for_event(&test.codex, |ev| matches!(ev, EventMsg::TurnComplete(_))).await;
-+
-+    test.codex
-+        .submit(Op::UserInput {
-+            items: vec![UserInput::Text {
-+                text: POST_AUTO_USER_MSG.into(),
-+                text_elements: Vec::new(),
-+            }],
-+            final_output_json_schema: None,
-+        })
-+        .await
-+        .unwrap();
-+    wait_for_event(&test.codex, |ev| matches!(ev, EventMsg::TurnComplete(_))).await;
-+
-+    let requests = request_log.requests();
-+    let request_bodies: Vec<String> = requests
-+        .iter()
-+        .map(|request| request.body_json().to_string())
-+        .collect();
-+    assert_eq!(
-+        request_bodies.len(),
-+        3,
-+        "reset-mode auto compaction should export locally and avoid a dedicated summary request"
-+    );
-+    assert!(
-+        request_bodies
-+            .iter()
-+            .all(|body| !body_contains_text(body, SUMMARIZATION_PROMPT)),
-+        "reset-mode auto compaction should never send the summarization prompt"
-+    );
-+
-+    let follow_up_body = requests[2].body_json();
-+    let follow_up_body_text = follow_up_body.to_string();
-+    assert!(
-+        follow_up_body_text.contains("Continuity mode is reset-based, not summary-based."),
-+        "follow-up turn should point the fresh context at the continuity graph"
-+    );
-+    assert!(
-+        follow_up_body_text.contains(thread_root.join("index.md").to_string_lossy().as_ref()),
-+        "follow-up turn should reference the exported thread graph"
-+    );
-+
-+    let input_follow_up = follow_up_body
-+        .get("input")
-+        .and_then(|value| value.as_array())
-+        .unwrap();
-+    let user_texts: Vec<String> = input_follow_up
-+        .iter()
-+        .filter(|item| item.get("type").and_then(|value| value.as_str()) == Some("message"))
-+        .filter(|item| item.get("role").and_then(|value| value.as_str()) == Some("user"))
-+        .filter_map(|item| {
-+            item.get("content")
-+                .and_then(|value| value.as_array())
-+                .and_then(|items| items.first())
-+                .and_then(|entry| entry.get("text"))
-+                .and_then(|value| value.as_str())
-+                .map(std::string::ToString::to_string)
-+        })
-+        .collect();
-+    assert!(
-+        user_texts.iter().any(|text| text == POST_AUTO_USER_MSG),
-+        "follow-up request should include the incoming user message after reset; got {user_texts:?}"
-+    );
-+    assert!(
-+        user_texts
-+            .iter()
-+            .all(|text| text != FIRST_AUTO_MSG && text != SECOND_AUTO_MSG),
-+        "follow-up request should start from a clean slate instead of replaying old user messages; got {user_texts:?}"
-+    );
-+    assert!(
-+        user_texts
-+            .iter()
-+            .all(|text| !text.contains(AUTO_SUMMARY_TEXT)),
-+        "follow-up request should not inject a synthetic summary message"
-+    );
-+
-+    let segment_roots = exported_segment_roots(&thread_root);
-+    assert_eq!(
-+        segment_roots.len(),
-+        1,
-+        "expected one exported graph segment"
-+    );
-+    assert!(segment_roots[0].join("rollout_items.json").exists());
-+    assert!(segment_roots[0].join("rollout_path.txt").exists());
-+    let history_text = std::fs::read_to_string(segment_roots[0].join("history.json"))
-+        .expect("read exported history");
-+    assert!(history_text.contains(FIRST_AUTO_MSG));
-+    assert!(history_text.contains(SECOND_AUTO_MSG));
-+    assert!(
-+        !history_text.contains(POST_AUTO_USER_MSG),
-+        "auto reset export should snapshot pre-turn history only"
-+    );
-+}
-+
- #[cfg_attr(windows, tokio::test(flavor = "multi_thread", worker_threads = 4))]
- #[cfg_attr(not(windows), tokio::test(flavor = "multi_thread", worker_threads = 2))]
- async fn auto_compact_emits_context_compaction_items() {
-diff --git a/codex-rs/tui/src/slash_command.rs b/codex-rs/tui/src/slash_command.rs
-index ec624d3..e4caa01 100644
---- a/codex-rs/tui/src/slash_command.rs
-+++ b/codex-rs/tui/src/slash_command.rs
-@@ -73,7 +73,9 @@ impl SlashCommand {
-             SlashCommand::Feedback => "send logs to maintainers",
-             SlashCommand::New => "start a new chat during a conversation",
-             SlashCommand::Init => "create an AGENTS.md file with instructions for Codex",
--            SlashCommand::Compact => "summarize conversation to prevent hitting the context limit",
-+            SlashCommand::Compact => {
-+                "reset live context and export a continuity graph before the window fills"
-+            }
-             SlashCommand::Review => "review my current changes and find issues",
-             SlashCommand::Rename => "rename the current thread",
-             SlashCommand::Resume => "resume a saved chat",

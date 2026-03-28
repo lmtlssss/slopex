@@ -1,11 +1,11 @@
 {
-  "name": "slopmodcodex",
+  "name": "sloppydisk",
   "version": "0.1.2",
   "description": "Minimal reset-based continuity patcher for OpenAI Codex.",
   "license": "MIT",
   "type": "commonjs",
   "bin": {
-    "slopmodcodex": "bin/slopmodcodex.js"
+    "sloppydisk": "bin/sloppydisk.js"
   },
   "files": [
     "bin",
@@ -14,7 +14,7 @@
     "LICENSE"
   ],
   "scripts": {
-    "postinstall": "node bin/slopmodcodex.js patch --postinstall",
+    "postinstall": "node bin/sloppydisk.js patch --postinstall",
     "build-release-artifact": "node scripts/build-release-artifact.cjs",
     "smoke:packaged": "node scripts/smoke-packaged-install.cjs"
   },

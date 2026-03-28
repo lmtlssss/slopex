@@ -125,7 +125,7 @@ try {
   const codexEntry = resolveCodexEntry(fakeCodexDir);
   runChecked("node", [codexEntry, "--help"], { cwd: repoRoot, env });
 
-  const toolBin = path.join(prefixDir, "bin", executableName("slopmodcodex"));
+  const toolBin = path.join(prefixDir, "bin", executableName("sloppydisk"));
   runChecked(toolBin, ["stock"], { cwd: repoRoot, env });
 
   const uninstalledConfig = fs.readFileSync(configPath, "utf8");

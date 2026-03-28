@@ -3,7 +3,7 @@
 const path = require("node:path");
 const { installSlopex, printStatus, uninstallSlopex } = require("../lib/patcher");
 
-const TOOL_NAME = "slopmodcodex";
+const TOOL_NAME = "sloppydisk";
 
 async function main() {
   const [command, ...args] = process.argv.slice(2);
